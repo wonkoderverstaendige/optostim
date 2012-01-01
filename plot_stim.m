@@ -1,4 +1,4 @@
-function elapsed = plot_stim(X, Fs)
+function elapsed = plot_protocol(X, Fs)
 
 plottime = tic;
 

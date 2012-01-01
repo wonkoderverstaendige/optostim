@@ -80,7 +80,8 @@ function X = stim_func_builder( io, timings, shapes, noPlot )
     else
         if DEBUG disp('timings no struct'); end
         if ischar(timings)
-        timings = load_template('timings', timings)
+            timings = load_template('timings', timings);
+        end
         % Check if template exists, load template
         return
     end
