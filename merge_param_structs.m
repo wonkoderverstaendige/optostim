@@ -30,7 +30,7 @@ for stim = 1:nstims
     %%% loops to check and deal()
     
     if has_cells
-        disp('       Current stim has cell entries...');
+        disp(['       Current stim ', num2str(stim), ' has cell entries...']);
 
         % op
         tmp = desc(stim);
@@ -39,7 +39,7 @@ for stim = 1:nstims
         desc(stim) = [];
 
         % adding new entries for each substimulation
-        for substim = 1:size(tmp.traindur, 2)
+        for substim = 1:size(tmp.template, 2)
             entry = size(desc, 2) + 1;
             for field = 1:nfields
                 desc(entry).(names{field}) = tmp.(names{field}){substim};
