@@ -1,19 +1,22 @@
 function merged = merge_param_structs(desc, fulldesc)
 
 % TODO:
-%   - deal with mixed cell/non-cell entries
+%   - "deal" mixed cell/non-cell entries
 
 % This function is necessary because I am too stupid to work with structs
-% proplery. It's a crutch, hardly working. Don't look too close at it, it
-% might just break.
+% properly. It's a crutch, hardly working. Don't look too close at it, it
+% might just fall apart.
+
 names = fieldnames(desc);
 nfields = numel(names);
-nstims = size(desc, 2);
+nstims = numel(desc);
 
 disp('    Parameter merge required!');
 
+%###### UNWRAP ############################################################
+
 % Check input struct for fields with cell entries (indicating a stim that
-% referenced a template/channel with several sub-stimulations
+% is referenced to a template/channel again with multiple stimulations
 for stim = 1:nstims
     has_cells = false;
     for field = 1:nfields
@@ -24,15 +27,13 @@ for stim = 1:nstims
     
     % if any of the entries has cells, we want to resolve the struct to
     % non-cell entries only
-
     %%% FOR CONVENIENCE WE CURRENTLY ASSUME THAT IF ONE FIELD HAS CELLS,
     %%% ALL CELLS WILL HAVE CELLS -> would otherwise require more awkward
     %%% loops to check and deal()
     
     if has_cells
-        disp(['       Current stim ', num2str(stim), ' has cell entries...']);
+        disp(['       Stimulus ', num2str(stim), ' has cell entries...']);
 
-        % op
         tmp = desc(stim);
         
         % removing the whole branch
@@ -46,12 +47,13 @@ for stim = 1:nstims
             end
         end
     end
-end    
-    
+end
+
+
+%###### MERGE #############################################################
+
 % empty struct of equal structure
-
 merged = struct(desc(1));
-
 
 % if given the full struct of the channel, append all stimuli with an empty
 % template to [desc] to include them in the final structure
