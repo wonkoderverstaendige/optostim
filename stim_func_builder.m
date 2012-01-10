@@ -32,13 +32,10 @@ MAX_N_SAMPLES = 10e5;
 % check/build input structs, load templates etc.
 desc = stim_func_params(desc);
 
-% All cells of numerical entries to arrays
-% CRAP - screws up arrays for entries with multiple values (e.g. trapez)
-%desc = struct_cell2array(desc);
-
+% ALL TIMINGS/SHAPES ENTRIES TO CELLS
 io = desc.io;
-timings = desc.timings;
-shapes = desc.shapes;
+timings = stim_to_cells(desc.timings);
+shapes = stim_to_cells(desc.shapes);
 
 % sum duration of stimulus length and offset from start, i.e. total length
 stim_durations = sum_stim_durations(timings);
@@ -52,7 +49,7 @@ if nsamples > MAX_N_SAMPLES
 end
 
 if DEBUG
-    disp('=== Recounting unresolved templates ===');
+    disp([10, '=== Recounting unresolved templates ===']);
 
     disp(['Remaining templates in timings struct: ', ...
         num2str(count_templates(timings)), 10]);
@@ -61,7 +58,7 @@ if DEBUG
 end
     
 nchans = size( io.outputchans, 2 );
-if DEBUG disp(['Matrix size: ', num2str(nsamples), 'x', num2str(nchans)]); end
+if DEBUG disp(['Matrix size: ', num2str(nsamples), 'x', num2str(nchans), 10]); end
 
     % preallocate should be max(largest offset + duration)
     % preallocate an additional channel to get RX6 to activate???
@@ -69,14 +66,9 @@ X = zeros( nsamples, nchans);
 
     % loop over all requested channels
     if DEBUG disp('================= Building stimuli =================='); end
+
 for i=1:nchans
     if DEBUG disp([' +  Channel: ', num2str(i)]); end
-    
-    % check type of mode, if char use directly, if cell/struct, use loop
-    % if char, make cell, if cell, good to go
-    if isa(shapes(i).modes, 'char')
-        shapes(i).modes = {shapes(i).modes};
-    end
     
     % Sanity checks    
     for stim = 1:size(shapes(i).modes, 2)
@@ -86,22 +78,20 @@ for i=1:nchans
             fprintf( 1, 'mode must be a string\n' )
             return
         end
-    
-        keyboard
         
         % build single stimulus
         % get pulse
-        x = single_pulse(shapes(i).modes{stim}, shapes(i).pulsedur(stim), shapes(i).Vvals(stim), shapes(1).pulsefreq(stim), io.Fs);
+        x = single_pulse(shapes(i).modes{stim}, shapes(i).pulsedur{stim}, shapes(i).Vvals{stim}, shapes(1).pulsefreq{stim}, io.Fs);
         
         % fill up with zeros
-        x = [x; zeros( io.Fs/timings(i).trainfreq(stim) - length(x), 1)];
+        x = [x; zeros( io.Fs/timings(i).trainfreq{stim} - length(x), 1)];
         
         % repeat pulse with pulsefreq
-        x = repmat( x, floor( timings(i).traindur(stim) * timings(i).trainfreq(stim)), 1 );
+        x = repmat( x, floor( timings(i).traindur{stim} * timings(i).trainfreq{stim}), 1 );
             
         % fill offset zeros, trailing zeros
         if DEBUG disp(size(x)); end
-        x = [zeros(floor(timings(i).offsets(stim)/1000*io.Fs), 1); x];
+        x = [zeros(floor(timings(i).offsets{stim}/1000*io.Fs), 1); x];
         if DEBUG disp(size(x)); end
         x = [x; zeros(nsamples - length(x), 1)];
         if DEBUG disp(size(x)); end        

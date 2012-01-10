@@ -7,6 +7,7 @@ function desc = check_stimdesc_struct(desc, type)
         desc = load_template(type, desc);
 
     elseif isstruct(desc)
+        
         % loop over stimuli
         for chan = 1:size(desc, 2)
             
@@ -84,7 +85,7 @@ function desc = check_stimdesc_struct(desc, type)
         error(['Struct for ', type, ' has wrong format!']);
 
     end
-
-
+    
+    
 end
     
