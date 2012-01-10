@@ -11,19 +11,8 @@ setPrompt();
 setPrompt('timestamp');
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Stimulation with function builder
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% REGULAR PROTOCOL (50 ms at various intensities)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-desc = load_template('full', 'regular');
-desc.timings = deal_fields(desc.timings, 'offsets', 0:50:150);
-X = stim_func_builder(desc);
-
-                    
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% ANALOG OUTPUTS
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% BIOLERPLATES
 
 % signal types:
 % 1. pulses of various amp
@@ -39,9 +28,48 @@ maxvals = [ 5 5 5 5 5 ]; % for blue LEDs
 mao = multi_ao_initiate( nchans, Fs0, n, maxvals );
 Fs = mao.Fs;
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PULSES OF VARIOUS INTENSITIES - SINGLE CHANNEL AT A TIME
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Stimulation with function builder
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%           REGULAR PROTOCOL (50 ms at various intensities)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+desc = load_template('full', 'regular');
+vals = 1:10;
+offsets = 0:50:150;
+randomized = false;
+
+% randomize parameter occurance orders
+if randomized 
+    vals = vals(randperm(numel(vals)));
+    offsets = offsets(randperm(numel(offsets)));
+end
+
+for v = 1:numel(vals)
+    % Simultaneous
+    desc.timings = deal_fields(desc.timings, 'offsets', 0);
+    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
+    [X, t] = stim_func_builder(desc);
+    pause((1000-t(2))/1000);
+
+    if randomized ofs = offsets(randperm(numel(offsets))); end
+
+    % Sequential
+    desc.timings = deal_fields(desc.timings, 'offsets', offsets);
+    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
+    [X, t] = stim_func_builder(desc);
+    pause((1000-t(2))/1000);
+end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%           PULSES OF VARIOUS INTENSITIES - SINGLE CHANNEL AT A TIME
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % a pulse train 10 ms pulses delivered at 5 Hz for 5 sec (25 pulses), with various intensities (e.g. 2.5V)
 
 dur = 5; % sec
@@ -63,12 +91,13 @@ for pulse_dur = pulse_durations
 	end
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% PULSES OF VARIOUS INTENSITIES - MULTIPLE CHANNELS WITH VARIOUS RELATIVE TIMING 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%               PULSES OF VARIOUS INTENSITIES - 
+%       MULTIPLE CHANNELS WITH VARIOUS RELATIVE TIMING 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % REGULAR PROTOCOL (50 ms at various intensities)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % short (50 ms) pulses:
 pulse_dur = 50; % ms

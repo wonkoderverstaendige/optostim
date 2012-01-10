@@ -5,20 +5,15 @@ function desc = deal_fields(desc, fields, values)
 
 if ischar(fields)
     nfields = 1;
-    fields = {fields}
+    fields = {fields};
 else
     nfields = numel(fields);
-end
-
-if numel(values) ~= numel(desc)
-    disp('ooops');
 end
 
 if ~iscell(values)
     values = {values};
 end
 
-keyboard
 % not sufficient! Dealing values to structs is tricky business
 for v = 1:nfields
     nchans = numel(desc);

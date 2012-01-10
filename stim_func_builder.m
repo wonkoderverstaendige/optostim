@@ -113,7 +113,7 @@ disp(['Building took ', num2str(build_elapsed), 'ms.']);
 
     % plot stimulation matrix if not suppressed
 if (~exist('noPlot', 'var') || ~noPlot)
-    plot_elapsed = plot_stim(X, io.Fs)*1000;
+    plot_elapsed = plot_stim(X, io.Fs)*1000; %resample(X, 1, 1)
     disp(['Plotting took ', num2str(plot_elapsed), 'ms.']);
 end
 
