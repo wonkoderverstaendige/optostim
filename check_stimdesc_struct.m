@@ -8,7 +8,9 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
 
 
     % For now. Not sure how to resolve this.
-    numchannels = 4;
+    if nargin < 3
+        numchannels = 4;
+    end
 
     if DEBUG disp(['== Performing sloppy integrity check for struct type ', type]); end
 

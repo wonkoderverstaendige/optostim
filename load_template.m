@@ -6,6 +6,7 @@ function template = load_template(type, name)
 % timings defines timings of pulses and trains
 % shapes defines individual pulses
 
+addpath('templates');
 
 if ~ischar(type) error('Template type must be string'); end
 if ~ischar(name) error('Template name must be string'); end
@@ -17,6 +18,11 @@ if strcmp(name, 'empty')
     tmp = example_structs('empty');
 else
     tmp = example_structs();
+end
+
+if strcmp(type, 'full')
+    template = eval([type '_' name]);
+    if DEBUG disp(['    - Loaded ', type, ' template: ', name]); end
 end
 
 % split template type string into level and the requested struct
@@ -31,14 +37,17 @@ else
     if DEBUG disp(['      Preparing to load ', type, ' template for a ', level, '.']); end
 end
 
-if strcmp(level, 'full')
+if strcmp(level, 'chan')
     template = tmp;
     if DEBUG disp(['    - Loaded ', type, ' ', level, ' template: ', name]); end
 elseif strcmp(level, 'chan')
     template = tmp.(type);
     if DEBUG disp(['    - Loaded ', type, ' ', level, ' template: ', name]); end 
 end
-    
+
+
+
+
 
 %     switch type
 %         % io templates (animal dependent??)

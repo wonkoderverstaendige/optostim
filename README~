@@ -1,0 +1,7 @@
+Waveform generator for optical stimulation, extending Erans func_ao_dummy functions
+
+Usgae example:
+X = stim_func_builder(example_structs);
+
+See 'example_structs.m' and template files for input requirements of stim_func_builder.
+Function generator returns matrix with one column/channel.

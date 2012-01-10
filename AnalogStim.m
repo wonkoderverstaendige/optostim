@@ -1,5 +1,5 @@
 % 2011_12_01
-% mice 428 w/ buzsaki32sp + 4 LEDs 
+% mice w/ buzsaki32sp + 4 LEDs 
 % connected to Slave ports 1-4
 % CS channels 9-12, inputs 0-3
 % analog control  by AO 1-4 (RX5)
@@ -17,70 +17,11 @@ setPrompt('timestamp');
 % REGULAR PROTOCOL (50 ms at various intensities)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% short (50 ms) pulses:
-pulse_dur = 50; % ms
-train_dur = 10; % sec
-train_freq = 1; % Hz
-lag = 100; % ms
-
-% sequential
-%timings = [ [ 0 : lag : lag * ( 4 - 1 ) ]' ones( 4, 1 ) * pulse_dur ]; 
-
-% simultaneous
-%timings = [zeros( 4, 1) ones( 4, 1 ) * pulse_dur ]; 
-
-% complex
-timings = [[ ones( 4, 1 ) * pulse_dur ];
-
-timings = struct
-
-shapes
-
-
-desc = struct(...
-    'Fs',       6000, ...
-    'chans',    {1, 2, 3, 4},...
-    'vals',     {1, 2, 3, 4},...
-    'freq',     train_freq, ...
-    'lags',     {timings(:, 1)}, ...
-    'durs',     {timings(:, 2)}, ...
-    'modes',    {'rect'} ...
-);
-
-% build functions
-
-% repeat over full length/attach further stimuli etc.
-
-% add fifth channel to activate RX6
-
+desc = load_template('full', 'regular');
+desc.timings = deal_fields(desc.timings, 'offsets', 0:50:150);
 X = stim_func_builder(desc);
 
-t0 = clock;
-% thesevals = [ 4.5 2.4 1.2 0.6 ]; % descending
-thesevals = [ 0.3 0.6 1.2 2.4 4.5 ]; % ascending
-% thesevals = 0.3 : 0.05 : 0.5; % focused low
-% thesevals = 1.0 : 0.2 : 3.0; % focused high
-% thesevals = 1.0 : 1.0 : 5.0; % focused very high
-for vals = thesevals
-	fprintf( 1, 'Sequential @ %0.3gV %0.3g ms (%0.3g)\n', vals, pulse_dur, etime( clock, t0 ) );
-    x = dig2ana( mat_seq, Fs, train_freq, train_dur, vals );
-	multi_ao_load( mao, x ); multi_ao_trigger( mao ); pause( train_dur + 1 )
-
-	fprintf( 1, 'Simultaneous @ %0.3gV %0.3g ms (%0.3g)\n', vals, pulse_dur, etime( clock, t0 ) );
-
-    X = zeros(train_dur*Fs, nchans);
-    
-    x_single = func_ao_dummy( Fs, 1, dur, val, [ freq freq * pulse_dur / 1000 ], 'train', shank ); 
-    
-    X = [X x_single];
-    X = offset_chan_mat(X, mat_sim);
-       
-    %x = dig2ana( mat_sim, Fs, train_freq, train_dur, vals );
-	multi_ao_load( mao, x ); multi_ao_trigger( mao ); pause( train_dur + 1 )
-end
-
-
-
+                    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % ANALOG OUTPUTS
 
