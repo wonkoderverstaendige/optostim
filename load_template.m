@@ -31,11 +31,6 @@ template = eval([subtypes{1} '_' name]);
 
 if numel(subtypes) > 1
     template = template.(subtypes{2});
-% elseif numel(subtypes) > 1 && ischar(subtypes)
-%     subtypes = {subtypes};
-% elseif numel(subtypes) == 1
-%     template
-%     
 end
 
 % % split template type string into level and the requested struct

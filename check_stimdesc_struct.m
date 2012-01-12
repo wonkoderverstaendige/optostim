@@ -29,7 +29,7 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
 
             % Get number of stimuli of channel from size of template field
             nstim = max(num_all_stim(:, chan));
-            ntemplates = count_templates(desc(chan))
+            ntemplates = count_templates(desc(chan));
 
             if DEBUG disp(['  + Channel ', num2str(chan), ' has ', ...
                            num2str(nstim), ' field entries.']); end
@@ -61,7 +61,7 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
 
                 % CHANNEL HAS NO TEMPLATE
                     elseif isempty(desc(chan).template{m})
-                        disp('    - Empty, skipped.');
+                        if DEBUG disp('    - Empty, skipped.'); end
 
                     else
                         error(['Faulty entry channel ', num2str(chan), ...
@@ -110,7 +110,7 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
                 end
 
             end
-            disp(' ');      
+            if DEBUG disp(' '); end
         end
     else
         error(['Struct for ', type, ' has wrong format!']);

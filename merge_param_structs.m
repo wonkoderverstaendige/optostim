@@ -11,7 +11,7 @@ names = fieldnames(desc);
 nfields = numel(names);
 nstims = numel(desc);
 
-disp('    Parameter merge required!');
+if DEBUG disp('    Parameter merge required!'); end
 
 %###### UNWRAP ############################################################
 
@@ -32,7 +32,7 @@ for stim = 1:nstims
     %%% loops to check and deal()
     
     if has_cells
-        disp(['       Stimulus ', num2str(stim), ' has cell entries...']);
+        if DEBUG disp(['       Stimulus ', num2str(stim), ' has cell entries...']); end
 
 %         keyboard
         
@@ -74,7 +74,7 @@ if nargin > 1 && isstruct(fulldesc)
     
     % if any stimuli have been copied merge them with the rest
     if entry > 1
-        disp(['    Merging ', num2str(entry-1), ' entries...']);
+        if DEBUG disp(['    Merging ', num2str(entry-1), ' entries...']); end
         desc = [desc tmp];
     end
 end
@@ -84,5 +84,5 @@ for i = 1:nfields
     merged.( names{i} ) = { desc(:).( names{i} ) };
 end    
 
-disp('        --> Done');
+if DEBUG disp('        --> Done'); end
 end

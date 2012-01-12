@@ -58,10 +58,10 @@ if DEBUG
 end
     
 nchans = size( io.outputchans, 2 );
-if DEBUG disp(['Matrix size: ', num2str(nsamples), 'x', num2str(nchans), 10]); end
+if DEBUG disp(['Zero-matrix size: ', num2str(nsamples), 'x', num2str(nchans), 10]); end
 
-    % preallocate should be max(largest offset + duration)
-    % preallocate an additional channel to get RX6 to activate???
+% preallocate should be max(largest offset + duration)
+% preallocate an additional channel to get RX6 to activate???
 X = zeros( nsamples, nchans);
 
     % loop over all requested channels
@@ -84,7 +84,7 @@ for i=1:nchans
         x = single_pulse(shapes(i).modes{stim}, shapes(i).pulsedur{stim}, shapes(i).Vvals{stim}, shapes(1).pulsefreq{stim}, io.Fs);
         
         % fill up with zeros
-        x = [x; zeros( io.Fs/timings(i).trainfreq{stim} - length(x), 1)];
+        x = [x; zeros( ceil(io.Fs/timings(i).trainfreq{stim}) - length(x), 1)];
         
         % repeat pulse with pulsefreq
         x = repmat( x, floor( timings(i).traindur{stim} * timings(i).trainfreq{stim}), 1 );
