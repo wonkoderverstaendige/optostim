@@ -34,6 +34,8 @@ for stim = 1:nstims
     if has_cells
         disp(['       Stimulus ', num2str(stim), ' has cell entries...']);
 
+%         keyboard
+        
         tmp = desc(stim);
         
         % removing the whole branch

@@ -6,14 +6,13 @@
 
 function desc = check_stimdesc_struct(desc, type, numchannels)
 
-
     % For now. Not sure how to resolve this.
     if nargin < 3
-        numchannels = 4;
+        numchannels = 1;
     end
-
     if DEBUG disp(['== Performing sloppy integrity check for struct type ', type]); end
-
+    if DEBUG disp(['=> Number of channels: ', num2str(numchannels)]); end
+    
     % Given template name instead of struct, meaning the whole thing
     % returns the full struct of given type. Repeat for n channels
     if ischar(desc)
@@ -21,18 +20,20 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
         desc = repmat(load_template(type, desc), 1, numchannels);
         
     elseif isstruct(desc)
+        
+        % matrix number stimuli
+        num_all_stim = count_stims(desc);
+        
         % loop over all channels
         for chan = 1:numel(desc)
 
-            % Get number of stimuli of channel from size of template field            
-            if ischar(desc(chan).template)
-                nstim = 1;
-            else
-                nstim = numel(desc(chan).template);
-            end
+            % Get number of stimuli of channel from size of template field
+            nstim = max(num_all_stim(:, chan));
+            keyboard
+            ntemplates = count_templates(desc(chan))
 
             if DEBUG disp(['  + Channel ', num2str(chan), ' has ', ...
-                           num2str(nstim), ' template entries.']); end
+                           num2str(nstim), ' field entries.']); end
 
             if nstim > 1
                 tmp = load_template(['chan_', type], 'empty');
