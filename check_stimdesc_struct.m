@@ -29,7 +29,6 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
 
             % Get number of stimuli of channel from size of template field
             nstim = max(num_all_stim(:, chan));
-            keyboard
             ntemplates = count_templates(desc(chan))
 
             if DEBUG disp(['  + Channel ', num2str(chan), ' has ', ...

@@ -79,7 +79,7 @@ for i=1:nchans
             return
         end
         
-        % build single stimulus
+    % build single stimulus
         % get pulse
         x = single_pulse(shapes(i).modes{stim}, shapes(i).pulsedur{stim}, shapes(i).Vvals{stim}, shapes(1).pulsefreq{stim}, io.Fs);
         
@@ -90,11 +90,10 @@ for i=1:nchans
         x = repmat( x, floor( timings(i).traindur{stim} * timings(i).trainfreq{stim}), 1 );
             
         % fill offset zeros, trailing zeros
-        if DEBUG disp(size(x)); end
-        x = [zeros(floor(timings(i).offsets{stim}/1000*io.Fs), 1); x];
-        if DEBUG disp(size(x)); end
-        x = [x; zeros(nsamples - length(x), 1)];
-        if DEBUG disp(size(x)); end        
+        ozs = zeros(floor(timings(i).offsets{stim}/1000*io.Fs), 1); 
+        tzs = zeros(nsamples - (length(x)+length(ozs)), 1);
+        x = [ozs; x; tzs];
+   
             
         % merge with final matrix
         % combine stimuli of channel, largest wins
@@ -107,11 +106,15 @@ end
 % trailing zeros
 X(end+1, :) = 0;
 
-    % time needed to build stimulation matrix
+% pad with zeros for required empty channels (e.g. channel 5 to get RX6 to
+% start
+X=zero_pad_mat(X, io);
+
+% time needed to build stimulation matrix
 build_elapsed = toc(build_time);
 disp(['Building took ', num2str(build_elapsed), 'ms.']);
 
-    % plot stimulation matrix if not suppressed
+% plot stimulation matrix if not suppressed
 if (~exist('noPlot', 'var') || ~noPlot)
     plot_elapsed = plot_stim(X, io.Fs)*1000; %resample(X, 1, 1)
     disp(['Plotting took ', num2str(plot_elapsed), 'ms.']);
