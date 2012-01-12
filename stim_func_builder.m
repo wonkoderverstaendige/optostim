@@ -118,6 +118,9 @@ disp(['Building took ', num2str(build_elapsed), 'ms.']);
 if (~exist('noPlot', 'var') || ~noPlot)
     plot_elapsed = plot_stim(X, io.Fs)*1000; %resample(X, 1, 1)
     disp(['Plotting took ', num2str(plot_elapsed), 'ms.']);
+else
+    disp('Plotting suppressed.');
+    plot_elapsed = 0;
 end
 
     % return timings, may be required to time following stimuli
