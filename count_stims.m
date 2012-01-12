@@ -19,7 +19,7 @@ num = zeros(nfields, nchans);
 % Build matrix 
 for channel = 1:nchans
     for field = 1:nfields
-        if ~ischar(desc(channel).(fnames{field}))
+        if ~ischar(desc(channel).(fnames{field})) && ~isnumeric(desc(channel).(fnames{field}))
 %             if numel(desc(channel).(fnames{field})) > num(field, channel)
                 num(field, channel) = numel(desc(channel).(fnames{field}));
 %             end

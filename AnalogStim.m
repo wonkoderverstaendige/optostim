@@ -29,7 +29,6 @@ mao = multi_ao_initiate( nchans, Fs0, n, maxvals );
 Fs = mao.Fs;
 
 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Stimulation with function builder
 
@@ -65,6 +64,33 @@ for v = 1:numel(vals)
     [X, t] = stim_func_builder(desc);
     pause((1000-t(2))/1000);
 end
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%           OFFSETTING TRAPEZES (50+200 ms at various intensities)
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+desc = load_template('full', 'trapez');
+vals = 0.3:0.1:0.8;
+offsets = 0:75:(3*75);
+randomized = false;
+
+% randomize parameter occurance orders
+if randomized 
+    vals = vals(randperm(numel(vals)));
+    offsets = offsets(randperm(numel(offsets)));
+end
+
+for v = 1:numel(vals)
+    if randomized ofs = offsets(randperm(numel(offsets))); end
+    % Offset
+    desc.timings = deal_fields(desc.timings, 'offsets', offsets);
+    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
+    [X, t] = stim_func_builder(desc);
+    pause((1000-t(2))/1000);
+end
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
