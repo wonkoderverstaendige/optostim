@@ -114,7 +114,7 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
                 end
 
                     % channel has template reference
-                if isnumeric(desc(chan).template)
+                if isnumeric(desc(chan).template) && ~isempty(desc(chan).template)
                     if DEBUG disp(['    Using channel ', num2str(desc(chan).template), ...
                         ' as template for channel', num2str(chan)]); end
                     desc(chan) = desc(round(desc(chan)));

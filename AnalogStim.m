@@ -39,7 +39,7 @@ Fs = mao.Fs;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 desc = load_template('full', 'regular');
-vals = 1:10;
+vals = 4:5;
 offsets = 0:50:150;
 randomized = false;
 
@@ -54,7 +54,10 @@ for v = 1:numel(vals)
     desc.timings = deal_fields(desc.timings, 'offsets', 0);
     desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
     [X, t] = stim_func_builder(desc);
-    pause((1000-t(2))/1000);
+    [X, t] = stim_func_builder(desc);
+	multi_ao_load( mao, X );
+	rc = multi_ao_trigger( mao );
+    pause((10000-t(2))/1000);
 
     if randomized ofs = offsets(randperm(numel(offsets))); end
 
@@ -62,7 +65,9 @@ for v = 1:numel(vals)
     desc.timings = deal_fields(desc.timings, 'offsets', offsets);
     desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
     [X, t] = stim_func_builder(desc);
-    pause((1000-t(2))/1000);
+	multi_ao_load( mao, X );
+	rc = multi_ao_trigger( mao );
+    pause((10000-t(2))/1000);
 end
 
 
