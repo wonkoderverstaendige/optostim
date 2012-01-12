@@ -1,0 +1,1 @@
+- check_stimdesc_struct does not properly check cases when numeric/character template, loading of referenced channel likely buggy and string template reference likely not working a all.

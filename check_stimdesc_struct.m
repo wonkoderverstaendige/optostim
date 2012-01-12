@@ -93,6 +93,17 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
                     desc(chan) = merge_param_structs(tmp, desc(chan));
                 end
 
+                
+                %
+                %
+                %
+                % THIS PART IS WIP!!!
+                %
+                %
+                %
+                %
+                
+                
             else
                     % channel template string
                 if ischar(desc(chan).template)
@@ -103,7 +114,7 @@ function desc = check_stimdesc_struct(desc, type, numchannels)
                 end
 
                     % channel has template reference
-                if isnumerictype(desc(chan).template)
+                if isnumeric(desc(chan).template)
                     if DEBUG disp(['    Using channel ', num2str(desc(chan).template), ...
                         ' as template for channel', num2str(chan)]); end
                     desc(chan) = desc(round(desc(chan)));
