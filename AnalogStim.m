@@ -18,9 +18,9 @@ q_close
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % REGULAR PROTOCOL (rectangular pulses with variable offsetting)
-vals = 0.2:0.2:1.0;
-pulsedur = 100;
-lag = 100;
+vals = [0.2:0.1:1.0 1.2:0.2:2.0 3:5];
+pulsedur = [1 5 10 50];
+lag = 50;
 offsets = {[0:(pulsedur+lag):3*(pulsedur+lag)], [0]};
 q_regrect
 
@@ -32,7 +32,7 @@ vals = 0.3:0.2:1.1;
 pulsedur = {[25 100 25], [25 100 0]};
 lag = pulsedur{1}(1);
 
-for factor = 1:3
+for factor = 0:3
 	offsets = 0 : (sum(pulsedur{1})-factor*lag) : (3 * (sum(pulsedur{1})-factor*lag));
 	q_trapez
 end
@@ -306,47 +306,3 @@ for val = thesevals
 		pause( dur + 1 );
 	end
 end
-
-
-
-% MATLAB PROTOCOL
-
->> desc = load_template('full', 'regular');
-vals = 5;
-offsets = 0:50:150;
-randomized = false;
-
-% randomize parameter occurance orders
-if randomized 
-    vals = vals(randperm(numel(vals)));
-    offsets = offsets(randperm(numel(offsets)));
-end
-
-for v = 1:numel(vals)
-    % Simultaneous
-    desc.timings = deal_fields(desc.timings, 'offsets', 0);
-    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
-    [X, t] = stim_func_builder(desc);
-    [X, t] = stim_func_builder(desc);
-	multi_ao_load( mao, X );
-	rc = multi_ao_trigger( mao );
-    pause((10000-t(2))/1000);
-
-    if randomized ofs = offsets(randperm(numel(offsets))); end
-
-    % Sequential
-    desc.timings = deal_fields(desc.timings, 'offsets', offsets);
-    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
-    [X, t] = stim_func_builder(desc);
-	multi_ao_load( mao, X );
-	rc = multi_ao_trigger( mao );
-    pause((10000-t(2))/1000);
-end
-Building took 0.076474ms.
-Plotting took 257.5766ms.
-Building took 0.045666ms.
-Plotting took 615.4089ms.
-Building took 0.043969ms.
-Plotting took 247.9606ms.
->> setPrompt('timestamp');
-[12-Jan-2012 19:10:57] 
