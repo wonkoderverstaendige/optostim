@@ -6,28 +6,22 @@
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIOLERPLATES
-% startup, link to DSPs, set prompt to timestamp
-addpath('wrapper');
-q_init
-% close link to RX/NI, reset prompt
-q_close
+q_init; % startup, link to DSPs, set prompt to timestamp
+q_close; % close link to RX/NI, reset prompt
 
-%##########################################################################
-%                 STIMULATION WITH FUNCTION BUILDER
-%##########################################################################
+%##########################  STIMULATION  #################################
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% REGULAR PROTOCOL (rectangular pulses with variable offsetting)
-vals = [0.2:0.1:1.0 1.2:0.2:2.0 3:5];
-pulsedur = [1 5 10 50];
+%%%%  REGULAR PROTOCOL (rectangular pulses with variable offsetting)  %%%%%
+% vals = [0.2:0.1:1.0 1.2:0.2:2.0 3:5];
+vals = [0.3:0.2:1.1 ];
+pulsedur = [1 5 10 20 50];
 lag = 50;
 offsets = {[0:(pulsedur+lag):3*(pulsedur+lag)], [0]};
 q_regrect
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%           OFFSETTING TRAPEZES (50+200 ms at various intensities)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+%%%%%%%  OFFSETTING TRAPEZES (50+200 ms at various intensities)  %%%%%%%%%%%
 vals = 0.3:0.2:1.1;
 pulsedur = {[25 100 25], [25 100 0]};
 lag = pulsedur{1}(1);

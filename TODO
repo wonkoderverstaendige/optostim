@@ -1,9 +1,9 @@
 % SEVERE:
 - Non-integer Fs screws up matrix indices, causing errors!!!
-
 - check_stimdesc_struct does not properly check cases when numeric/character template, loading of referenced channel likely buggy and string template reference likely not working a all.
 
 % Features:
+- full_simple, overwrite mode, as blank stim protocol template, push timings/shapes onto, less templates needed
 - General function overriding template values with non-temlate values
 - Display set flags (e.g. triggering, plotting, randomization, Fs ...) upon initialization
 - full timestamped logging of stimuli that were TRIGGERED! Saving struct and current commit
