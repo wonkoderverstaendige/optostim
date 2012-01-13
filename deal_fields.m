@@ -20,7 +20,6 @@ for v = 1:nfields
     m = ceil(nchans/numel(values{v}));
     values{v} = repmat(values{v}, 1, m);
 
-%     keyboard
     for channel = 1:nchans
             desc(channel).(fields{v}) = values{v}(channel);
     end

@@ -21,7 +21,7 @@
 % - allow using calibration of channel/Volt/uWatt/PercentMax power values
 
 
-function [X, build_times] = stim_func_builder( desc, noPlot )
+function [X, build_times] = stim_func_builder( desc, DoPlot )
 
 % timing elapsed to build
 build_time = tic;
@@ -112,14 +112,14 @@ X=zero_pad_mat(X, io);
 
 % time needed to build stimulation matrix
 build_elapsed = toc(build_time);
-disp(['Building took ', num2str(build_elapsed), 'ms.']);
+if DEBUG disp(['Building took ', num2str(build_elapsed), 'ms.']); end
 
 % plot stimulation matrix if not suppressed
-if (~exist('noPlot', 'var') || ~noPlot)
-    plot_elapsed = plot_stim(X, io.Fs)*1000; %resample(X, 1, 1)
-    disp(['Plotting took ', num2str(plot_elapsed), 'ms.']);
+if (~exist('noPlot', 'var') || DoPlot)
+    plot_elapsed = plot_stim(X, io.Fs)*1000; 
+    if DEBUG disp(['Plotting took ', num2str(plot_elapsed), 'ms.']); end
 else
-    disp('Plotting suppressed.');
+    if DEBUG disp('Plotting suppressed.'); end
     plot_elapsed = 0;
 end
 

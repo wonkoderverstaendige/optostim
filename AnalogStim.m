@@ -4,99 +4,38 @@
 % CS channels 9-12, inputs 0-3
 % analog control  by AO 1-4 (RX5)
 
-% Reset prompt to normal ('>>')
-setPrompt();
-% Set prompt to updating timestamp 
-% !!!Screws up autocomplete!!!
-setPrompt('timestamp');
-
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % BIOLERPLATES
+% startup, link to DSPs, set prompt to timestamp
+addpath('wrapper');
+q_init
+% close link to RX/NI, reset prompt
+q_close
 
-% signal types:
-% 1. pulses of various amp
-% 2. ramps
-% 3. sines
-% 4. chirp
-% 5. white noise
-
-n = 1e5; % maximum number of samples (initial - ignored later)
-nchans = 5; % 5th channel is to start the RX6 in order to get a pulse at the beginning of each AO
-Fs0 = 6000; % 6 kHz
-maxvals = [ 5 5 5 5 5 ]; % for blue LEDs
-mao = multi_ao_initiate( nchans, Fs0, n, maxvals );
-Fs = mao.Fs;
-
+%##########################################################################
+%                 STIMULATION WITH FUNCTION BUILDER
+%##########################################################################
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Stimulation with function builder
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%           REGULAR PROTOCOL (50 ms at various intensities)
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-desc = load_template('full', 'regular');
-vals = 4:5;
-offsets = 0:50:150;
-randomized = false;
-
-% randomize parameter occurance orders
-if randomized 
-    vals = vals(randperm(numel(vals)));
-    offsets = offsets(randperm(numel(offsets)));
-end
-
-for v = 1:numel(vals)
-    % Simultaneous
-    desc.timings = deal_fields(desc.timings, 'offsets', 0);
-    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
-    [X, t] = stim_func_builder(desc);
-    [X, t] = stim_func_builder(desc);
-	multi_ao_load( mao, X );
-	rc = multi_ao_trigger( mao );
-    pause((10000-t(2))/1000);
-
-    if randomized ofs = offsets(randperm(numel(offsets))); end
-
-    % Sequential
-    desc.timings = deal_fields(desc.timings, 'offsets', offsets);
-    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
-    [X, t] = stim_func_builder(desc);
-	multi_ao_load( mao, X );
-	rc = multi_ao_trigger( mao );
-    pause((10000-t(2))/1000);
-end
-
+% REGULAR PROTOCOL (rectangular pulses with variable offsetting)
+vals = 0.2:0.2:1.0;
+pulsedur = 100;
+lag = 100;
+offsets = {[0:(pulsedur+lag):3*(pulsedur+lag)], [0]};
+q_regrect
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %           OFFSETTING TRAPEZES (50+200 ms at various intensities)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-desc = load_template('full', 'trapez');
-vals = 0.3:0.1:0.8;
-offsets = 0:75:(3*75);
-randomized = false;
+vals = 0.3:0.2:1.1;
+pulsedur = {[25 100 25], [25 100 0]};
+lag = pulsedur{1}(1);
 
-% randomize parameter occurance orders
-if randomized 
-    vals = vals(randperm(numel(vals)));
-    offsets = offsets(randperm(numel(offsets)));
+for factor = 1:3
+	offsets = 0 : (sum(pulsedur{1})-factor*lag) : (3 * (sum(pulsedur{1})-factor*lag));
+	q_trapez
 end
-
-for v = 1:numel(vals)
-    if randomized ofs = offsets(randperm(numel(offsets))); end
-    % Offset
-    desc.timings = deal_fields(desc.timings, 'offsets', offsets);
-    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
-    [X, t] = stim_func_builder(desc);
-    pause((1000-t(2))/1000);
-end
-
-
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %           PULSES OF VARIOUS INTENSITIES - SINGLE CHANNEL AT A TIME
@@ -368,3 +307,46 @@ for val = thesevals
 	end
 end
 
+
+
+% MATLAB PROTOCOL
+
+>> desc = load_template('full', 'regular');
+vals = 5;
+offsets = 0:50:150;
+randomized = false;
+
+% randomize parameter occurance orders
+if randomized 
+    vals = vals(randperm(numel(vals)));
+    offsets = offsets(randperm(numel(offsets)));
+end
+
+for v = 1:numel(vals)
+    % Simultaneous
+    desc.timings = deal_fields(desc.timings, 'offsets', 0);
+    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
+    [X, t] = stim_func_builder(desc);
+    [X, t] = stim_func_builder(desc);
+	multi_ao_load( mao, X );
+	rc = multi_ao_trigger( mao );
+    pause((10000-t(2))/1000);
+
+    if randomized ofs = offsets(randperm(numel(offsets))); end
+
+    % Sequential
+    desc.timings = deal_fields(desc.timings, 'offsets', offsets);
+    desc.shapes = deal_fields(desc.shapes, 'Vvals', vals(v));
+    [X, t] = stim_func_builder(desc);
+	multi_ao_load( mao, X );
+	rc = multi_ao_trigger( mao );
+    pause((10000-t(2))/1000);
+end
+Building took 0.076474ms.
+Plotting took 257.5766ms.
+Building took 0.045666ms.
+Plotting took 615.4089ms.
+Building took 0.043969ms.
+Plotting took 247.9606ms.
+>> setPrompt('timestamp');
+[12-Jan-2012 19:10:57] 
