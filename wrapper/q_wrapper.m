@@ -30,8 +30,8 @@ for v = 1:numel(Ovals)
 
             % Push to DSP/NI and trigger if that is not a test
             if trigger 
-                rc = multi_ao_trigger( mao ); 
-                multi_ao_load( mao, X );
+			multi_ao_load( mao, X );
+			rc = multi_ao_trigger( mao ); 
             else
                 disp('Dry run, no triggering!');
             end
