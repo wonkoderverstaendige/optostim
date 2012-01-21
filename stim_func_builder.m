@@ -115,7 +115,7 @@ build_elapsed = toc(build_time);
 if DEBUG disp(['Building took ', num2str(build_elapsed), 'ms.']); end
 
 % plot stimulation matrix if not suppressed
-if (~exist('noPlot', 'var') || DoPlot)
+if (~exist('DoPlot', 'var') || DoPlot)
     plot_elapsed = plot_stim(X, io.Fs)*1000; 
     if DEBUG disp(['Plotting took ', num2str(plot_elapsed), 'ms.']); end
 else
