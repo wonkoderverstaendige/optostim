@@ -1,15 +1,19 @@
 % calibrate laser diode
 
+% close any existing serial connections
+closeSerial;
+
+% open serial connection to presumed port of Arduino
 s = initSerial('COM3');
 
 desc = load_template('full', 'calibration');
-desc.io.outputchans = 10;
+% desc.io.outputchans = 10;
 desc.timings.offsets = 200;
 
 % Ovals = [1:5];
 % pulsedur = [1 5 10 20 50 100 200 500];
-Ovals = [4];
-pulsedur = [1000];
+Ovals = [0.1:0.2:0.9];
+pulsedur = [250];
 
 % update io with infos from DSPs etc
 % desc.io.Fs = Fs;
@@ -27,8 +31,19 @@ for v = 1:numel(Ovals)
 			
             % Push to DSP/NI and record with Arduino
 			[RecVals, RecTs] = RecordArduino(s, recdur, X, mao);
+            
+            % plateau detection
+            [n, xout] = hist(RecVals, 4);
+            [n2, xout2] = hist(RecVals(RecVals>xout(2)), 20);
+            [sorted, order] = sort(n2, 'descend');
+            plateau = xout2(order(1));
+            disp([num2str(Ovals(v)), 'V peak light power detected at: ', num2str(plateau)]);
+
         end
 end
+
+% Close serial connection, otherwise it causes errors to pop up
+closeSerial(s);
 
 %overlay plotting of both
 figure(2); 
@@ -49,4 +64,3 @@ ax2 = axes('Position',get(ax1,'Position'),...
 		   
 hl2 = line(RecTs, RecVals*range, 'Color', 'r', 'Parent', ax2);
 
-closeSerial(s);
