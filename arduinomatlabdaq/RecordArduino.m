@@ -1,45 +1,64 @@
-function X = RecordArduino(recdur)
+% Takes serial object s and either a duration in seconds as a scalar, or a matrix of values to throw at DSP
 
-    ADCREF = 1.1; % Internal reference ADC, 1.1V, 2.56V, 5V
-    INTLOOP = 50; % amount of samples Arduino should take upon command
+function [values, timestamps] = RecordArduino(s, recdur, X, mao)
 
+	ADCREF = 1.1; % Internal reference ADC, 1.1V, 2.56V, 5V
+    INTLOOP = 200; % amount of samples Arduino should take upon command
+	
+	if s.InputBufferSize < (2*INTLOOP)
+		error('Too many loops for Arduino, would overrun serial connection input buffer');
+	end
+
+    if exist('X') && ~isempty(X)
+		trigMAO = true;
+		multi_ao_load( mao, X );
+	else
+		trigMAO = false;
+	end
+	
     progress = true;
-    % Initialize serial port
-    s = serial('COM3');
-    set(s,{'BaudRate', 'DataBits','StopBits'}, {57600, 8, 1}); 
-    fopen(s);
-    disp('Pausing a second for connection to settle... for whatever reason!');
-    pause(1);
-    %s.ReadAsyncMode = 'continuous'; %default anyway
-
     
-    Tsettle = 0.005; % minimum settle time for Ardunio ADC
-    maxnvals = ceil(recdur/Tsettle);
+    Tsettle = 0.005; % minimum settle time for Ardunio ADC = pause in loop!
+    maxnvals = ceil(recdur/Tsettle); % maximum number values without any overhead
     idx = 1;
+	
+	% preallocate
     timestamps = zeros(maxnvals, 1);
     values = zeros(maxnvals, 1);
     tloop = zeros(maxnvals, 1);
 
-    % FOR SOME F*** REASON IT TAKES ONE SECOND FOR THE CONNECTION TO SETTLE
-    % SO THAT HANDSHAKING WORKS!
-   
     total = tic;
     tstart = clock;
     if progress textprogressbar(['Recording for ', num2str(recdur), ' seconds: ']); end
+	
+	figure(10);
+	plot(values/1024*ADCREF);
+	ylim([0 1]);
     
     while toc(total)/recdur <= 1
         eloop = tic;
+
+		% trigger MAO after first value INTLOOP sized batch requested, should give baseline
+		if trigMAO 
+			rc = multi_ao_trigger( mao );
+			trigMAO = false;
+		end
         
-        % send command and number of loops to run
+		% send command and number of loops to run
         fwrite(s, INTLOOP);
 
-        slice = idx:(idx+INTLOOP-1);
-        
-        if progress textprogressbar(toc(total)/recdur*100); end
 
-        pause(0.05); 
-        n = 0;
+
+		slice = idx:(idx+INTLOOP-1);
+        if progress textprogressbar(toc(total)/recdur*100); end
         
+		n = 0;
+        
+		%minimum time Arduino needs to complete sampling loop
+		%pause(Tsettle * INTLOOP);
+		plot(values/1024*ADCREF);
+		ylim([0 1]);
+		
         % wait for Arduino to write back the two bytes, [n] ms timeout!
         while get(s, 'BytesAvailable') < 2*INTLOOP && n < 100;
             pause(0.0005);
@@ -69,7 +88,7 @@ function X = RecordArduino(recdur)
         % linearly spaced timestamps
         t2 = etime(clock, tstart);
         timestamps(slice) = linspace(t1+(t2-t1)/INTLOOP, t2, INTLOOP);
-%         keyboard
+
         % average time to get values
         tloop(slice) = toc(eloop) / INTLOOP;
         
@@ -85,15 +104,20 @@ function X = RecordArduino(recdur)
         textprogressbar([' Done! ', 10, 'Recorded ', num2str(idx-1), '/',...
             num2str(maxnvals), ' values']); 
     end
-    fclose(s); delete(instrfind('Type', 'serial'));
-    X = [timestamps values/1024*ADCREF tloop];
-    
+
+    X = [values/1024*ADCREF timestamps tloop];
+
     % remove trailing zeros
     X((idx):end, :) = [];
+	
+	values = X(:, 1);
+	timestamps = X(:, 2);
+	delta = X(:, 3);
+	
+	plot(values);
+	ylim([0 1]);
+	
 end
-
-
-
 
 
 function textprogressbar(c)

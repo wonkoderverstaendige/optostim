@@ -1,5 +1,8 @@
 % add path to rest of quick wrapper scripts
 addpath('wrapper');
+addpath('templates');
+addpath('calibrations');
+addpath('arduinomatlabdaq');
 
 % Set prompt to updating timestamp - !!!Screws up autocomplete!!!
 setPrompt('timestamp');
