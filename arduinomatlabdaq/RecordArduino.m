@@ -1,6 +1,8 @@
 % Takes serial object s and either a duration in seconds as a scalar, or a matrix of values to throw at DSP
 
-function [values, timestamps] = RecordArduino(s, recdur, X, mao)
+% Returns values in V and timestamps as seconds from initiation
+
+function [values, timestamps, delta] = RecordArduino(s, recdur, X, mao, preview)
 
 	ADCREF = 1.1; % Internal reference ADC, 1.1V, 2.56V, 5V
     INTLOOP = 200; % amount of samples Arduino should take upon command
@@ -16,7 +18,7 @@ function [values, timestamps] = RecordArduino(s, recdur, X, mao)
 		trigMAO = false;
 	end
 	
-    progress = true;
+    progress = false;
     
     Tsettle = 0.005; % minimum settle time for Ardunio ADC = pause in loop!
     maxnvals = ceil(recdur/Tsettle); % maximum number values without any overhead
@@ -31,9 +33,19 @@ function [values, timestamps] = RecordArduino(s, recdur, X, mao)
     tstart = clock;
     if progress textprogressbar(['Recording for ', num2str(recdur), ' seconds: ']); end
 	
-	figure(10);
-	plot(values/1024*ADCREF);
-	ylim([0 1]);
+	% if preview true-ish, plot, but if numeric, plot into specific figure
+	if exist('preview')
+		if isnumeric(preview) && preview > 0
+			hf = figure(preview);
+		else
+			hf = figure;
+		end
+		ha = gca;
+		plot(ha, values/1024*ADCREF);
+		ylim([0 1]);
+	else
+		ha = false;
+	end
     
     while toc(total)/recdur <= 1
         eloop = tic;
@@ -47,8 +59,6 @@ function [values, timestamps] = RecordArduino(s, recdur, X, mao)
 		% send command and number of loops to run
         fwrite(s, INTLOOP);
 
-
-
 		slice = idx:(idx+INTLOOP-1);
         if progress textprogressbar(toc(total)/recdur*100); end
         
@@ -56,8 +66,11 @@ function [values, timestamps] = RecordArduino(s, recdur, X, mao)
         
 		%minimum time Arduino needs to complete sampling loop
 		%pause(Tsettle * INTLOOP);
-		plot(values/1024*ADCREF);
-		ylim([0 1]);
+		
+		if ha
+			plot(ha, values/1024*ADCREF);
+			ylim([0 1]);
+		end
 		
         % wait for Arduino to write back the two bytes, [n] ms timeout!
         while get(s, 'BytesAvailable') < 2*INTLOOP && n < 100;
@@ -105,7 +118,7 @@ function [values, timestamps] = RecordArduino(s, recdur, X, mao)
             num2str(maxnvals), ' values']); 
     end
 
-    X = [values/1024*ADCREF timestamps tloop];
+    X = [values/1023*ADCREF timestamps tloop];
 
     % remove trailing zeros
     X((idx):end, :) = [];
@@ -114,8 +127,10 @@ function [values, timestamps] = RecordArduino(s, recdur, X, mao)
 	timestamps = X(:, 2);
 	delta = X(:, 3);
 	
-	plot(values);
-	ylim([0 1]);
+	if ha
+		plot(ha, values);
+		ylim([0 1]);
+	end
 	
 end
 
