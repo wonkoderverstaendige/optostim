@@ -15,13 +15,16 @@ s = initSerial('COM3');
 desc = load_template('full', 'calibration');
 % desc.io.outputchans = 10;
 desc.timings.offsets = 100;
-desc.timings.trainfreq = 1;
-desc.timings.traindur = 2;
+desc.timings.trainfreq = 0.5;
+desc.timings.traindur = 6;
 
-% Ovals = [1:5];
-% pulsedur = [1 5 10 20 50 100 200 500];
-Ovals = [0:0.02:3];
+%%%%%% CALIBRATION PARAMETERS %%%%%%%%%
+% 200ms is ok, short and barely enough for plateau
 pulsedur = [200];
+
+% Voltage range
+Ovals = [1:0.02:3];
+
 
 % update io with infos from DSPs etc
 % desc.io.Fs = Fs;
@@ -97,7 +100,7 @@ while v <= numel(Ovals)
             [X, t] = stim_func_builder(desc, plotting);
 			
 			% cut off trailing zeros except for short tail as buffer
-			X = X(1:(max(find(X~=0))+ceil(0.1*Fs)), :);
+			X = X(1:(max(find(X~=0))+ceil(0.3*Fs)), :);
 			
 			recdur = ceil(size(X, 1)/Fs);
 			
@@ -178,7 +181,7 @@ ax2 = axes('Position',get(ax1,'Position'),...
 		   
 hl2 = line(RecTs, RecVals*range, 'Color', 'r', 'Parent', ax2);
 
-if numel(raw_power) > 1
+if numel(Ovals) > 1
 	
 	lightpower = raw_power.*numranges(raw_ranges)';
 
@@ -200,7 +203,7 @@ if numel(raw_power) > 1
 	
 	end
 
-%save('calibrations/diodes/LDR01_detail', 'RecVals', 'RecTs', 'lightpower', 'Ovals', 'raw_ranges')
+%save('calibrations/diodes/LDR01_detail', 'RecVals', 'RecTs', 'lightpower', 'Ovals', 'raw_ranges', 'Fs', 'X');
 
 % switch beep back to whatever it was before
 if strcmp(beepstate, 'off')

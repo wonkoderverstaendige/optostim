@@ -18,7 +18,7 @@ function [values, timestamps, delta] = RecordArduino(s, recdur, X, mao, preview)
 		trigMAO = false;
 	end
 	
-    progress = false;
+    progress = true;
     
     Tsettle = 0.005; % minimum settle time for Ardunio ADC = pause in loop!
     maxnvals = ceil(recdur/Tsettle); % maximum number values without any overhead
