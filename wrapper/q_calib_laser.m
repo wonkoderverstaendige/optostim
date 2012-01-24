@@ -1,15 +1,10 @@
 % calibrate laser diode
 
-% With lasers, never go over 40mA (~3.0V) unless you know what you do!
-ABSMAXVAL = 3;
+% diode = 'LED';
+diode = 'laser';
 
-% What annoys a noisy oyster? A noisy nose annoys an oyster.
-beepstate = beep;
-beep on;
-
-% possible ranges on PM30
-% 10uW 30uW 100uW ..... 1W
-[numranges, strranges, potranges, units] = rangesPM30;
+% if coupled, divide the suggestion ranges by fixed value of eff.
+coupled = false;
 
 % close any existing serial connections
 closeSerial;
@@ -19,23 +14,71 @@ s = initSerial('COM3');
 
 desc = load_template('full', 'calibration');
 % desc.io.outputchans = 10;
-desc.timings.offsets = 200;
+desc.timings.offsets = 100;
+desc.timings.trainfreq = 1;
+desc.timings.traindur = 2;
 
 % Ovals = [1:5];
 % pulsedur = [1 5 10 20 50 100 200 500];
-Ovals = [0:0.5:2.5];
+Ovals = [0:0.02:3];
 pulsedur = [200];
 
 % update io with infos from DSPs etc
 % desc.io.Fs = Fs;
+
+if strcmp(lower(diode), 'laser')
+	% With lasers, never go over 40mA (~3.0V) unless you know what you do!
+	ABSMAXVAL = 3;
+
+	% Suggested values for ranges of PM30 in 0.5V steps, excluding 0
+	suggranges(1:4) = 10; % 3 mW -> ignore the low crap
+	suggranges(5:10) = 11; % 10 mW
+	
+	% Minimum value from which on to ask for a repetition if too low
+	MINREPETITIONV = 1.6;  % ignore whole beginning for lasers!
+	
+	% Minimum plataeu level
+	MINPLATEAULEVEL = 0.0;
+	
+elseif strcmp(lower(diode), 'led');
+	% With lasers, never go over 40mA (~3.0V) unless you know what you do!
+	ABSMAXVAL = 5;
+
+	% Suggested values for ranges of PM30 in 0.5V steps, excluding 0
+	suggranges(1) = 10; % 3 mW
+	suggranges(2:4) = 11;
+	suggranges(5:10) = 12; % 10 mW
+
+	% Minimum value from which on to ask for a repetition if too low
+	MINREPETITIONV = 0.2;
+	
+	% Minimum plataeu level
+	MINPLATEAULEVEL = 0.1;
+end
+
+% What annoys a noisy oyster? A noisy nose annoys an oyster.
+beepstate = beep;
+beep on;
+
+% possible ranges on PM30
+% 10uW 30uW 100uW ..... 1W
+[numranges, strranges, potranges, units] = rangesPM30;
 
 % start Stimulation & record light intensity w/ Arduino
 lightpower = zeros(numel(Ovals), numel(pulsedur));
 setranges = zeros(size(lightpower));
 
 %initial range of light meter:
-range = selectPM30range(0);
+for sug = 1:numel(suggranges)
+	if Ovals(1) >= sug/2
+		suggestion = suggranges(sug);
+	else
+		suggestion = suggranges(1);
+	end
+end
 
+range = selectPM30range(suggestion);
+	
 v = 1;
 while v <= numel(Ovals)
         for d = 1:numel(pulsedur)
@@ -52,6 +95,10 @@ while v <= numel(Ovals)
 
             % build stimulus
             [X, t] = stim_func_builder(desc, plotting);
+			
+			% cut off trailing zeros except for short tail as buffer
+			X = X(1:(max(find(X~=0))+ceil(0.1*Fs)), :);
+			
 			recdur = ceil(size(X, 1)/Fs);
 			
             % Push to DSP/NI and record with Arduino
@@ -62,16 +109,16 @@ while v <= numel(Ovals)
 
 			% Check for overflows in current reading (RecArduino gives Voltage back, 1V == max)
 			if any(RecVals >= 1);
-				redo = input('OVERFLOW! Remeasure at higher range? [Y]/n ', 's');
+				redo = input(['OVERFLOW AT ', num2str(Ovals(v)), 'V! Remeasure at higher range? [Y]/n '], 's');
 				if isempty(redo) || any(strcmp(upper(redo), {'Y', 'YES'}))
 					redo = 1;
 				else
 					redo = 0;
 				end
 			
-			% underflow, higher might increase signal/noise ratio
-			elseif max(xout) < 0.1
-				redo = input('Value very low, redo at lower range? [Y]/n ', 's');
+			% "under ranged", higher range might increase signal/noise ratio
+			elseif max(xout) < MINPLATEAULEVEL && Ovals(v) > MINREPETITIONV
+				redo = input(['Value for ', num2str(Ovals(v)), 'V under 0.1, redo at lower range? [Y]/n '], 's');
 				if isempty(redo) || any(strcmp(upper(redo), {'Y', 'YES'}))
 					redo = -1;
 				else
@@ -88,11 +135,11 @@ while v <= numel(Ovals)
 				[sorted, order] = sort(n2, 'descend');
 				plateau = xout2(order(1));
 				platcorr = plateau*numranges(range)*1e3^potranges(range);
-				fprintf( 1, '%0.2gV peak light power detected at: %0.2g %s\n', Ovals(v), platcorr, units{potranges(range)+1});
+				fprintf( 1, '%0.3gV peak light power detected at: %0.2g %s\n', Ovals(v), platcorr, units{potranges(range)+1});
 				% disp([num2str(Ovals(v)), 'V peak light power detected at: ', platstr, strranges{range}]);
 
-				lightpower(v, d) = plateau;
-				setranges(v, d) = range;
+				raw_power(v, d) = plateau;
+				raw_ranges(v, d) = range;
 				
 				% measure next value
 				v = v + 1;
@@ -131,9 +178,29 @@ ax2 = axes('Position',get(ax1,'Position'),...
 		   
 hl2 = line(RecTs, RecVals*range, 'Color', 'r', 'Parent', ax2);
 
-figure(3);
-plot(
+if numel(raw_power) > 1
+	
+	lightpower = raw_power.*numranges(raw_ranges)';
 
+	% Calculate linear between two values
+	dp = diff(smooth(lightpower));
+	[v, i] = max(diff(smooth(dp)));
+
+	% unitidx = max(potranges(raw_ranges))+1;
+	rangeidx = max(raw_ranges);
+	
+	figure(3);
+	plot(Ovals, lightpower*1e3^potranges(rangeidx));
+	hold on;
+	plot([Ovals(i) Ovals(i)], ylim, '-r');
+	hold off;
+
+	ylabel(['Light power [', units{potranges(rangeidx)+1}, ']']);
+	xlabel('Volt');
+	
+	end
+
+%save('calibrations/diodes/LDR01_detail', 'RecVals', 'RecTs', 'lightpower', 'Ovals', 'raw_ranges')
 
 % switch beep back to whatever it was before
 if strcmp(beepstate, 'off')

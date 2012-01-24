@@ -5,7 +5,7 @@ numeric = a(1:end-1);
 pots = abs(floor(floor(log10(numeric))/3));
 
 % range strings
-units = {'W', 'uW', 'mW', 'nW'};
+units = {'W', 'mW', 'uW', 'nW'};
 for e = 1:numel(numeric)
 	strings{e} = [num2str(numeric(e)*1e3^pots(e)), ' ', units{pots(e)+1}];
 end

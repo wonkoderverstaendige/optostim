@@ -4,13 +4,13 @@ function range = selectPM30range(suggested)
 
 disp(nargin);
 if nargin ~= 1
-	suggested = 5; % 10 mW as standard value initially, safe value even with LED on
+	suggested = 11; % 10 mW as standard value initially, safe value even with LED on
 end
 
 % initial range selection, has different qestion string
 if suggested == 0
 	qstring = 'Initial range on PM30? [';
-	suggested = 5;
+	suggested = 11;
 else
 	qstring = 'Range on PM30? [';
 end
