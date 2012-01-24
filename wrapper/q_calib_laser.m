@@ -68,8 +68,8 @@ beep on;
 [numranges, strranges, potranges, units] = rangesPM30;
 
 % start Stimulation & record light intensity w/ Arduino
-lightpower = zeros(numel(Ovals), numel(pulsedur));
-setranges = zeros(size(lightpower));
+raw_power = zeros(numel(Ovals), numel(pulsedur));
+raw_ranges = zeros(size(raw_power));
 
 %initial range of light meter:
 for sug = 1:numel(suggranges)
@@ -85,8 +85,6 @@ range = selectPM30range(suggestion);
 v = 1;
 while v <= numel(Ovals)
         for d = 1:numel(pulsedur)
-
-			redo = 0;
 			
 			%last second check
 			if Ovals(v) > ABSMAXVAL
@@ -110,6 +108,9 @@ while v <= numel(Ovals)
 			% for plateau detection and check for underflow
 			[n, xout] = hist(RecVals, 4);
 
+
+			redo = 0;
+			
 			% Check for overflows in current reading (RecArduino gives Voltage back, 1V == max)
 			if any(RecVals >= 1);
 				redo = input(['OVERFLOW AT ', num2str(Ovals(v)), 'V! Remeasure at higher range? [Y]/n '], 's');
