@@ -1,7 +1,8 @@
 % calibrate laser diode
 
 % diode = 'LED';
-diode = 'laser';
+% diode = 'laser';
+diode = input('Diode name: ', 's');
 
 % if coupled, divide the suggestion ranges by fixed value of eff.
 coupled = false;
@@ -12,27 +13,27 @@ closeSerial;
 % open serial connection to presumed port of Arduino
 s = initSerial('COM3');
 
-desc = load_template('full', 'calibration');
-% desc.io.outputchans = 10;
-desc.timings.offsets = 100;
-desc.timings.trainfreq = 0.5;
-desc.timings.traindur = 6;
-
 %%%%%% CALIBRATION PARAMETERS %%%%%%%%%
-% 200ms is ok, short and barely enough for plateau
-pulsedur = [200];
-
-% Voltage range
-Ovals = [1:0.02:3];
-
 
 % update io with infos from DSPs etc
 % desc.io.Fs = Fs;
 
-if strcmp(lower(diode), 'laser')
+if strcmp(lower(diode), 'laser')  || strcmp(lower(diode(1:2)), 'ld')
 	% With lasers, never go over 40mA (~3.0V) unless you know what you do!
 	ABSMAXVAL = 3;
 
+	% Voltage range
+	Ovals = [1.6:0.2:2.4];
+	
+	% 200ms is ok, short and barely enough for plateau
+	pulsedur = [200];
+	
+	desc = load_template('full', 'calibration');
+	% desc.io.outputchans = 10;
+	desc.timings.offsets = 100;
+	desc.timings.trainfreq = 0.5;
+	desc.timings.traindur = 6;
+	
 	% Suggested values for ranges of PM30 in 0.5V steps, excluding 0
 	suggranges(1:4) = 10; % 3 mW -> ignore the low crap
 	suggranges(5:10) = 11; % 10 mW
@@ -43,7 +44,7 @@ if strcmp(lower(diode), 'laser')
 	% Minimum plataeu level
 	MINPLATEAULEVEL = 0.0;
 	
-elseif strcmp(lower(diode), 'led');
+elseif strcmp(lower(diode), 'led') || strcmp(lower(diode(1:2)), 'd-')
 	% With lasers, never go over 40mA (~3.0V) unless you know what you do!
 	ABSMAXVAL = 5;
 
@@ -51,11 +52,22 @@ elseif strcmp(lower(diode), 'led');
 	suggranges(1) = 10; % 3 mW
 	suggranges(2:4) = 11;
 	suggranges(5:10) = 12; % 10 mW
+	
+		% Voltage range
+	Ovals = [0:0.1:1 1.2:0.2:5];
+	% 200ms is ok, short and barely enough for plateau
+	pulsedur = [250];
+	
+	desc = load_template('full', 'calibration');
+	% desc.io.outputchans = 10;
+	desc.timings.offsets = 100;
+	desc.timings.trainfreq = 1;
+	desc.timings.traindur = 2;
 
 	% Minimum value from which on to ask for a repetition if too low
 	MINREPETITIONV = 0.2;
 	
-	% Minimum plataeu level
+	% Minimum plataeu level below which underflow
 	MINPLATEAULEVEL = 0.1;
 end
 
@@ -98,7 +110,9 @@ while v <= numel(Ovals)
             [X, t] = stim_func_builder(desc, plotting);
 			
 			% cut off trailing zeros except for short tail as buffer
-			X = X(1:(max(find(X~=0))+ceil(0.3*Fs)), :);
+			if Ovals(v) > 0
+				X = X(1:(max(find(X~=0))+ceil(0.3*Fs)), :);
+			end
 			
 			recdur = ceil(size(X, 1)/Fs);
 			
@@ -204,7 +218,19 @@ if numel(Ovals) > 1
 	
 	end
 
-%save('calibrations/diodes/LDR01_detail', 'RecVals', 'RecTs', 'lightpower', 'Ovals', 'raw_ranges', 'Fs', 'X');
+ if strcmp(upper(diode(1:2)), 'D-') || strcmp(uppder(diode(1:2)), 'ld')
+	attachnum = 0;
+	attachstr = '';
+	while exist(['calibrations/diodes/', upper(diode), '_', datestr(now, 1), attachstr, '.mat'], 'file')
+		if attachnum
+			attachstr = ['_', num2str(attachnum)];
+		end
+		attachnum = attachnum + 1;
+	end
+	filename = ['calibrations/diodes/', upper(diode), '_', datestr(now, 1), attachstr, '.mat'];
+	save(filename, 'RecVals', 'RecTs', 'lightpower', 'Ovals', 'raw_ranges', 'Fs', 'X', 'desc');
+	disp(['Saved as: ', filename]);
+end
 
 % switch beep back to whatever it was before
 if strcmp(beepstate, 'off')
