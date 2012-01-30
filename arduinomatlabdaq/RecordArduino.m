@@ -18,8 +18,6 @@ function [values, timestamps, delta] = RecordArduino(s, recdur, X, mao, preview)
 		trigMAO = false;
 	end
 	
-    progress = true;
-    
     Tsettle = 0.005; % minimum settle time for Ardunio ADC = pause in loop!
     maxnvals = ceil(recdur/Tsettle); % maximum number values without any overhead
     idx = 1;
@@ -31,22 +29,36 @@ function [values, timestamps, delta] = RecordArduino(s, recdur, X, mao, preview)
 
     total = tic;
     tstart = clock;
-    if progress textprogressbar(['Recording for ', num2str(recdur), ' seconds: ']); end
 	
 	% if preview true-ish, plot, but if numeric, plot into specific figure
 	if exist('preview')
 		if isnumeric(preview) && preview > 0
 			hf = figure(preview);
+		elseif preview == false
+			hf = false;
 		else
 			hf = figure;
 		end
-		ha = gca;
-		plot(ha, values/1024*ADCREF);
-		ylim([0 1]);
+		
+		if hf
+			ha = gca;
+			plot(ha, values/1024*ADCREF);
+			ylim([0 1]);
+		else
+			ha = false;
+		end
 	else
 		ha = false;
 	end
-    
+
+	if ha
+	    progress = true;
+	else
+		progress = false;
+	end
+
+    if progress textprogressbar(['Recording for ', num2str(recdur), ' seconds: ']); end	
+	
     while toc(total)/recdur <= 1
         eloop = tic;
 

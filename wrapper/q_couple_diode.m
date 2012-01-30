@@ -1,8 +1,8 @@
 % calibrate laser diode
 
 % diode = 'LED';
-% diode = 'laser';
-diode = input('Diode name: ', 's');
+diode = 'laser';
+% diode = input('Diode name: ', 's');
 
 % if coupled, divide the suggestion ranges by fixed value of eff.
 coupled = false;
@@ -23,16 +23,16 @@ if strcmp(lower(diode), 'laser')  || strcmp(lower(diode(1:2)), 'ld')
 	ABSMAXVAL = 3;
 
 	% Voltage range
-	Ovals = [0:0.01:3];
+	Ovals = [2.4];
 	
 	% 200ms is ok, short and barely enough for plateau
 	pulsedur = [200];
 	
 	desc = load_template('full', 'calibration');
 	% desc.io.outputchans = 10;
-	desc.timings.offsets = 100;
-	desc.timings.trainfreq = 0.5;
-	desc.timings.traindur = 6;
+	desc.timings.offsets = 50;
+	desc.timings.trainfreq = 2;
+	desc.timings.traindur = 0.5;
 	
 	% Suggested values for ranges of PM30 in 0.5V steps, excluding 0
 	suggranges(1:4) = 10; % 3 mW -> ignore the low crap
@@ -45,41 +45,43 @@ if strcmp(lower(diode), 'laser')  || strcmp(lower(diode(1:2)), 'ld')
 	MINPLATEAULEVEL = 0.0;
 	
 	% tail of zeros to be left in seconds
-	TRAILTIME = 0.2;
+	TRAILTIME = 0.1;
 	
 elseif strcmp(lower(diode), 'led') || strcmp(lower(diode(1:2)), 'd-')
 	% With lasers, never go over 40mA (~3.0V) unless you know what you do!
 	ABSMAXVAL = 5;
 
 	% Suggested values for ranges of PM30 in 0.5V steps, excluding 0
-	suggranges(1) = 09; % 3 mW
+	suggranges(1) = 10; % 3 mW
 	suggranges(2:4) = 11;
 	suggranges(5:10) = 12; % 10 mW
 	
 		% Voltage range
-	Ovals = [0:0.01:0.5 0.6:0.1:5];
+	Ovals = [4.5];
 	% 200ms is ok, short and barely enough for plateau
-	pulsedur = [250];
+	pulsedur = [400];
 	
 	desc = load_template('full', 'calibration');
 	% desc.io.outputchans = 10;
-	desc.timings.offsets = 100;
-	desc.timings.trainfreq = 1;
-	desc.timings.traindur = 2;
+	desc.timings.offsets = 50;
+	desc.timings.trainfreq = 2;
+	desc.timings.traindur = 0.5;
 
 	% Minimum value from which on to ask for a repetition if too low
 	MINREPETITIONV = 0.2;
 	
 	% Minimum plataeu level below which underflow
-	MINPLATEAULEVEL = 0.1;
+	MINPLATEAULEVEL = 0.0;
 	
 	% tail of zeros to be left in seconds
-	TRAILTIME = 0.2;
+	TRAILTIME = 0.05;
 end
 
 % What annoys a noisy oyster? A noisy nose annoys an oyster.
 beepstate = beep;
 beep on;
+
+plotting = false;
 
 % possible ranges on PM30
 % 10uW 30uW 100uW ..... 1W
@@ -99,9 +101,11 @@ for sug = 1:numel(suggranges)
 end
 
 range = selectPM30range(suggestion);
+% range = 12;
 	
 v = 1;
-while v <= numel(Ovals)
+next = '';
+while isempty(next)
         for d = 1:numel(pulsedur)
 			
 			%last second check
@@ -113,7 +117,7 @@ while v <= numel(Ovals)
             desc.shapes = deal_fields(desc.shapes, {'Vvals', 'pulsedur'}, {Ovals(v), pulsedur(d)});
 
             % build stimulus
-            [X, t] = stim_func_builder(desc, plotting);
+            [X, t] = stim_func_builder(desc, false);
 			
 			% cut off trailing zeros except for short tail as buffer
 			if Ovals(v) > 0
@@ -123,7 +127,7 @@ while v <= numel(Ovals)
 			recdur = ceil(size(X, 1)/Fs);
 			
             % Push to DSP/NI and record with Arduino
-			[RecVals, RecTs] = RecordArduino(s, recdur, X, mao, 10);
+			[RecVals, RecTs] = RecordArduino(s, recdur, X, mao, plotting);
 			
 			% for plateau detection and check for underflow
 			[n, xout] = hist(RecVals, 4);
@@ -153,19 +157,20 @@ while v <= numel(Ovals)
 			if redo ~= 0
 				disp(range + redo);
 				range = selectPM30range(range + redo);
+
 			else
 				% plateau detection
 				[n2, xout2] = hist(RecVals(RecVals>xout(2)), 20);
 				[sorted, order] = sort(n2, 'descend');
 				plateau = xout2(order(1));
 				platcorr = plateau*numranges(range)*1e3^potranges(range);
-				fprintf( 1, '%0.3fV peak light power detected at: %0.3f %s\n', Ovals(v), platcorr, units{potranges(range)+1});
+				fprintf( 1, '%0.2f %s - ', platcorr, units{potranges(range)+1});
 
 				raw_power(v, d) = plateau;
 				raw_ranges(v, d) = range;
 				
 				% measure next value
-				v = v + 1;
+				% v = v + 1;
 			end
 			
 			% % Predict overflows/"underflow" low in next reading
@@ -175,67 +180,67 @@ while v <= numel(Ovals)
 			
 			% end
 					
-			
+		next = input('Next!');
         end
 end
 
 % Close serial connection, otherwise it causes errors to pop up
 closeSerial(s);
 
-%overlay plotting of both
-figure(2); 
-clf
-hl1 = line([1:size(X,1)]/Fs, X, 'Color', 'k');
-ax1 = gca;
-set(ax1,'XColor','k','YColor','k', 'ylim', [0 5], 'xlim', [ 1 size(X, 1) ] / Fs)
-% ylim( [ 0 5 ] )
-% xlim( [ 1 size(X, 1) ] / Fs )
+% % overlay plotting of both
+% figure(2); 
+% clf
+% hl1 = line([1:size(X,1)]/Fs, X, 'Color', 'k');
+% ax1 = gca;
+% set(ax1,'XColor','k','YColor','k', 'ylim', [0 5], 'xlim', [ 1 size(X, 1) ] / Fs)
+% % ylim( [ 0 5 ] )
+% % xlim( [ 1 size(X, 1) ] / Fs )
 
-ax2 = axes('Position',get(ax1,'Position'),...
-           'XAxisLocation','top',...
-           'YAxisLocation','right',...
-           'Color','none',...
-           'XColor','r','YColor','r', ...
-		   'xlim', [ 1 size(X, 1) ] / Fs);
+% ax2 = axes('Position',get(ax1,'Position'),...
+           % 'XAxisLocation','top',...
+           % 'YAxisLocation','right',...
+           % 'Color','none',...
+           % 'XColor','r','YColor','r', ...
+		   % 'xlim', [ 1 size(X, 1) ] / Fs);
 		   
 		   
-hl2 = line(RecTs, RecVals*range, 'Color', 'r', 'Parent', ax2);
+% hl2 = line(RecTs, RecVals*range, 'Color', 'r', 'Parent', ax2);
 
-if numel(Ovals) > 1
+% if numel(Ovals) > 1
 	
-	lightpower = raw_power.*numranges(raw_ranges)';
+	% lightpower = raw_power.*numranges(raw_ranges)';
 
-	% Calculate linear between two values
-	dp = diff(smooth(lightpower));
-	[v, i] = max(diff(smooth(dp)));
+	%%Calculate linear between two values
+	% dp = diff(smooth(lightpower));
+	% [v, i] = max(diff(smooth(dp)));
 
-	% unitidx = max(potranges(raw_ranges))+1;
-	rangeidx = max(raw_ranges);
+	%%unitidx = max(potranges(raw_ranges))+1;
+	% rangeidx = max(raw_ranges);
 	
-	figure(3);
-	plot(Ovals, lightpower*1e3^potranges(rangeidx));
-	hold on;
-	plot([Ovals(i) Ovals(i)], ylim, '-r');
-	hold off;
+	% figure(3);
+	% plot(Ovals, lightpower*1e3^potranges(rangeidx));
+	% hold on;
+	% plot([Ovals(i) Ovals(i)], ylim, '-r');
+	% hold off;
 
-	ylabel(['Light power [', units{potranges(rangeidx)+1}, ']']);
-	xlabel('Volt');
+	% ylabel(['Light power [', units{potranges(rangeidx)+1}, ']']);
+	% xlabel('Volt');
 	
-	end
+	% end
 
- if strcmp(upper(diode(1:2)), 'D-') || strcmp(upper(diode(1:2)), 'LD')
-	attachnum = 0;
-	attachstr = '';
-	while exist(['calibrations/diodes/', upper(diode), '_', datestr(now, 1), attachstr, '.mat'], 'file')
-		if attachnum
-			attachstr = ['_', num2str(attachnum)];
-		end
-		attachnum = attachnum + 1;
-	end
-	filename = ['calibrations/diodes/', upper(diode), '_', datestr(now, 1), attachstr, '.mat'];
-	save(filename, 'RecVals', 'RecTs', 'lightpower', 'Ovals', 'raw_ranges', 'Fs', 'X', 'desc');
-	disp(['Saved as: ', filename]);
-end
+ % if strcmp(upper(diode(1:2)), 'D-') || strcmp(uppder(diode(1:2)), 'ld')
+	% attachnum = 0;
+	% attachstr = '';
+	% while exist(['calibrations/diodes/', upper(diode), '_', datestr(now, 1), attachstr, '.mat'], 'file')
+		% if attachnum
+			% attachstr = ['_', num2str(attachnum)];
+		% end
+		% attachnum = attachnum + 1;
+	% end
+	% filename = ['calibrations/diodes/', upper(diode), '_', datestr(now, 1), attachstr, '.mat'];
+	% save(filename, 'RecVals', 'RecTs', 'lightpower', 'Ovals', 'raw_ranges', 'Fs', 'X', 'desc');
+	% disp(['Saved as: ', filename]);
+% end
 
 % switch beep back to whatever it was before
 if strcmp(beepstate, 'off')
